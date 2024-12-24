@@ -1,0 +1,127 @@
+{
+    "title": "ohmyzsh",
+    "description": "Validation schema for ohmyzsh input",
+    "type": "array",
+    "items":
+    {
+        "type": "object",
+        "properties":
+        {
+            "user":
+            {
+                "ref": "#/definitions/non-empty-string"
+            },
+            "updates":
+            {
+                "type": "object",
+                "properties":
+                {
+                    "mode":
+                    {
+                        "ref": "#/definitions/non-empty-string",
+                        "enum":
+                        [
+                            "auto",
+                            "disabled",
+                            "reminder"
+                        ]
+                    },
+                    "frequency":
+                    {
+                        "ref": "#/definitions/non-empty-integer"
+                    },
+                    "verbosity":
+                    {
+                        "ref": "#/definitions/non-empty-string",
+                        "enum":
+                        [
+                            "default",
+                            "minimal",
+                            "silent"
+                        ]
+                    }
+                }
+            },
+            "plugins":
+            {
+                "type": "array",
+                "items":
+                {
+                    "type": "object",
+                    "properties":
+                    {
+                        "name":
+                        {
+                            "ref": "#/definitions/non-empty-string"
+                        },
+                        "repository":
+                        {
+                            "ref": "#/definitions/non-empty-string"
+                        },
+                        "version":
+                        {
+                            "ref": "#/definitions/non-empty-string"
+                        }
+                    },
+                    "required":
+                    [
+                        "name"
+                    ]
+                }
+            },
+            "theme":
+            {
+                "type": "object",
+                "properties":
+                {
+                    "name":
+                    {
+                        "ref": "#/definitions/non-empty-string"
+                    },
+                    "repository":
+                    {
+                        "ref": "#/definitions/non-empty-string"
+                    },
+                    "version":
+                    {
+                        "ref": "#/definitions/non-empty-string"
+                    },
+                    "iscustom":
+                    {
+                        "type": "boolean"
+                    }
+                },
+                "required":
+                [
+                    "name"
+                ]
+            }
+        },
+        "required":
+        [
+            "user"
+        ]
+    },
+    "definitions":
+    {
+        "non-empty-integer":
+        {
+            "type": "integer",
+            "minLength": 1
+        },
+        "non-empty-string":
+        {
+            "type": "string",
+            "minLength": 1
+        },
+        "non-empty-string-array":
+        {
+            "type": "array",
+            "minItems": 1,
+            "items":
+            {
+                "$ref": "#/definitions/non-empty-string"
+            }
+        }
+    }
+}

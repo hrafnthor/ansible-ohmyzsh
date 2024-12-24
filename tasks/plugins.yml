@@ -1,0 +1,24 @@
+
+
+- name: "ohmyzsh | plugins | check for local plugin repository"
+  ansible.builtin.git:
+    repo: "{{ plugin.repository }}"
+    dest: "{{ ohmyzsh_path }}/custom/plugins/{{ plugin.name }}"
+    update: no
+  check_mode: yes
+  register: ohmyzsh_plugin_repo
+  when:
+    - plugin.repository is defined
+
+
+- name: "ohmyzsh | plugins | checkout plugin repository"
+  become_user: "{{ configuration.user }}"
+  ansible.builtin.git:
+    repo: "{{ plugin.repository }}"
+    dest: "{{ ohmyzsh_path }}/custom/plugins/{{ plugin.name }}"
+    version: "{{ plugin.version | default(omit) }}"
+    depth: 1
+  when:
+    - ohmyzsh_plugin_repo.changed
+    - plugin.repository is defined
+

@@ -1,0 +1,41 @@
+# -----------------------------------------------------------------------------
+# This file contains tasks related to configuration of a ohmyzsh theme for
+# a specific user.
+#
+# It expects to have access to the following variables:
+#
+#   - 'ohmyzsh_path': points to installation location of ohmyzsh
+#
+#   - 'zshrc_path': points to location of user's .zshrc file
+#
+#   - 'theme': contains input variables related to the theme being configured
+# -----------------------------------------------------------------------------
+
+- name: "ohmyzsh | theme | check for local theme repository"
+  ansible.builtin.git:
+    repo: "{{ configuration.theme.repository }}"
+    dest: "{{ ohmyzsh_path }}/custom/plugins/{{ configuration.theme.name }}"
+    update: no
+  check_mode: yes
+  register: ohmyzsh_theme_repo
+  when:
+    - configuration.theme is defined
+    - configuration.theme.repository is defined
+
+- name: "ohmyzsh | theme | checkout theme repository"
+  become_user: "{{ configuration.user }}"
+  ansible.builtin.git:
+    repo: "{{ configuration.theme.repository }}"
+    dest: "{{ ohmyzsh_path }}/custom/themes/{{ configuration.theme.name }}"
+    version: "{{ configuration.theme.version | default(omit) }}"
+    depth: 1
+  when:
+    - ohmyzsh_theme_repo.changed
+    - configuration.theme is defined
+    - configuration.theme.repository is defined
+
+- name: "ohmyzsh | theme | set theme in .zshrc"
+  ansible.builtin.lineinfile:
+    path: "{{ zshrc_path }}"
+    regexp: "^ZSH_THEME="
+    line: "ZSH_THEME=\"{{ configuration.theme.name + '/' + configuration.theme.name if (configuration.theme.iscustom | default(false)) else configuration.theme.name }}\""
