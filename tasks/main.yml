@@ -1,0 +1,14 @@
+- name: "ohmyzsh | assertion | run assertions"
+  ansible.utils.validate:
+    data: "{{ ohmyzsh }}"
+    criteria: "{{ lookup('file', 'assertions/criteria/ohmyzsh-criteria.json') | from_json }}"
+    engine: ansible.utils.jsonschema
+  run_once: yes
+  delegate_to: localhost
+  when:
+    - ohmyzsh is defined
+
+- ansible.builtin.include_tasks: configure.yml
+  loop: "{{ ohmyzsh }}"
+  loop_control:
+    loop_var: "configuration"

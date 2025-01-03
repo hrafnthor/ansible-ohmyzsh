@@ -1,0 +1,117 @@
+# -----------------------------------------------------------------------------
+# This file contains tasks related to configuration of ohmyzsh for a specific 
+# user.
+#
+# It expects to be iterated over with a dictionary called 'configuration'.
+# -----------------------------------------------------------------------------
+
+
+- name: "ohmyzsh | configuration | set repository path"
+  ansible.builtin.set_fact:
+    ohmyzsh_path: "/home/{{ configuration.user }}/.oh-my-zsh"
+
+- name: "ohmyzsh | configuration | create repository folder"
+  ansible.builtin.file:
+    path: "{{ ohmyzsh_path }}"
+    owner: "{{ configuration.user }}"
+    group: "{{ configuration.user }}"
+    modification_time: preserve
+    access_time: preserve
+    state: directory
+    mode: 0755
+
+- name: "ohmyzsh | configuration | check for local repository"
+  ansible.builtin.git:
+    repo: "https://github.com/ohmyzsh/ohmyzsh.git"
+    dest: "{{ ohmyzsh_path }}"
+    update: no
+  check_mode: yes
+  register: ohmyzsh_local_repo
+
+- name: "ohmyzsh | configuration | checkout repository"
+  become_user: "{{ configuration.user }}"
+  ansible.builtin.git:
+    repo: "https://github.com/ohmyzsh/ohmyzsh.git"
+    dest: "{{ ohmyzsh_path }}"
+    depth: 1
+  when:
+    - ohmyzsh_local_repo.changed
+
+- name: "ohmyzsh | configuration | set .zshrc path"
+  ansible.builtin.set_fact:
+    zshrc_path: "/home/{{ configuration.user }}/.zshrc"
+
+- name: "ohmyzsh | configuration | stat .zshrc"
+  ansible.builtin.stat:
+    path: "{{ zshrc_path }}"
+  register: zshrc
+
+- name: "ohmyzsh | configuration | create .zshrc"
+  ansible.builtin.file:
+    path: "{{ zshrc_path }}"
+    owner: "{{ configuration.user }}"
+    group: "{{ configuration.user }}"
+    state: touch
+    mode: 0644
+  when:
+    - not zshrc.stat.exists
+
+- name: "ohmyzsh | configuration | export 'ZSH' in '.zshrc"
+  ansible.builtin.lineinfile:
+    path: "{{ zshrc_path }}"
+    regexp: "^export ZSH="
+    line: "export ZSH={{ ohmyzsh_path }}"
+
+- name: "ohmyzsh | configuration | configure theme"
+  ansible.builtin.include_tasks: theme.yml
+  when:
+    - configuration.theme is defined
+
+- name: "ohmyzsh | configuration | configure update mode"
+  ansible.builtin.lineinfile:
+    path: "{{ zshrc_path }}"
+    regexp: "^zstyle ':omz:update' mode"
+    line: "zstyle ':omz:update' mode {{ configuration.updates.mode }}"
+  when:
+    - configuration.updates is defined
+    - configuration.updates.mode is defined
+
+- name: "ohmyzsh | configuration | configure update frequency"
+  ansible.builtin.lineinfile:
+    path: "{{ zshrc_path }}"
+    regexp: "^zstyle ':omz:update' frequency"
+    line: "zstyle ':omz:update' frequency {{ configuration.updates.frequency }}"
+  when:
+    - configuration.updates is defined
+    - configuration.updates.frequency is defined
+
+- name: "ohmyzsh | configuration | configure update verbosity"
+  ansible.builtin.lineinfile:
+    path: "{{ zshrc_path }}"
+    regexp: "^zstyle ':omz:update' verbosity"
+    line: "zstyle ':omz:update' verbosity {{ configuration.updates.verbosity }}"
+  when:
+    - configuration.updates is defined
+    - configuration.updates.verbosity is defined
+
+- name: "ohmyzsh | configuration | checkout plugins"
+  ansible.builtin.include_tasks: plugins.yml
+  loop: "{{ configuration.plugins }}"
+  loop_control:
+    loop_var: plugin
+  when:
+    - configuration.plugins is defined
+
+- name: "ohmyzsh | configuration | configure plugins"
+  ansible.builtin.lineinfile:
+    path: "{{ zshrc_path }}"
+    regexp: "^plugins="
+    line: "plugins=({{ configuration.plugins | map(attribute='name') | join(' ') }})"
+  when:
+    - configuration.plugins is defined
+
+- name: "ohmyzsh | configuration | source 'oh-my-zsh.sh' in '.zshrc'"
+  ansible.builtin.lineinfile:
+    path: "{{ zshrc_path }}"
+    regexp: "^source $ZSH/oh-my-zsh.sh"
+    line: "source $ZSH/oh-my-zsh.sh"
